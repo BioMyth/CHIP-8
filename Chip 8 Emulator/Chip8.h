@@ -218,7 +218,6 @@ public:
             [this]() {
             byte baseX = this->REG[(this->current >> 8) & 0x0F];
             byte baseY = this->REG[(this->current >> 4) & 0x0F];
-            //bool tmp;
             this->REG[0xF] = 0;
             for (int y = 0; y < (this->current & 0xF); y++) {
                 for (int x = 0; x < 8; x++) {

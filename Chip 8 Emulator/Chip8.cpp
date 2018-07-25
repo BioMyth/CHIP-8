@@ -91,6 +91,7 @@ void Chip8::loadProgram(char* name){
 	if(length < 4096 - 0x200){
 		in.seekg (0, std::ios::beg);
 		in.read (reinterpret_cast<char *>(&RAM[0x200]),length);
+        std::cout << "Program Loaded" << std::endl;
 	}
 	else{
 		std::cout<<"File is too large"<<std::endl;
