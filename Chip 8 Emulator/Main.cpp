@@ -1,22 +1,37 @@
 #include <iostream>
 #include "Chip8.h"
 
-using namespace std;
-
 int main(){
 	Chip8 tmp;
-	int i=0;
 	bool hasEnded=false;
-	tmp.loadProgram("invaders.c8");
-	//tmp.loadProgram("pong2.c8");
-	//tmp.loadProgram("tetris.c8");
-	//std::cout<<static_cast<int>('s')<<std::endl;
+    bool programLoaded = false;
+    while (true){
+        bool stop = true;
+        std::cout << "Press the number next to the program name to load it:" << std::endl
+            << "1. invaders" << std::endl
+            << "2. pong" << std::endl
+            << "3. tetris" << std::endl;
+        char in = '\0';
+        std::cin >> in;
+        switch (in) {
+        case '1':
+            tmp.loadProgram("invaders.c8");
+            break;
+        case '2':
+            tmp.loadProgram("pong2.c8");
+            break;
+        case '3':
+            tmp.loadProgram("tetris.c8");
+            break;
+        default:
+            stop = false;
+            break;
+        }
+        if (stop) break;
+    }
+    std::cout << "Starting" << std::endl;
 	tmp.start(&hasEnded);
-	//for(int i=40; i > 0; i--){
-	//	std::this_thread::sleep_for(std::chrono::seconds(1));
-		//std::cout<<i<<" seconds left"<<std::endl;
-	//}asdf
-	//hasEnded=true;
+    std::cout << "Joining" << std::endl;
 	tmp.join();
 	std::cout<<"All Done"<<std::endl;
 	std::cin.ignore();

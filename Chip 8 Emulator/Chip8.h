@@ -6,7 +6,9 @@
 #include <thread>
 #include <chrono>
 #include <Windows.h>
+#include <exception>
 #include <string>
+#include "RAM.h"
 
 //	memory map
 //	0x000-0x1FF - Chip 8 interpreter (contains font set in emu)
@@ -14,7 +16,8 @@
 //	0x200-0xFFF - Program ROM and work RAM
 
 //in hz
-#define CPU_CLOCK 600
+#define CPU_CLOCK 540//600
+//#define DEBUG true
 
 typedef unsigned short opcode_size;
 typedef unsigned char byte;
@@ -24,41 +27,29 @@ class Chip8{
 public:
 	Chip8();
 	~Chip8();
+
 	void loadProgram(char* name);
 	void cycle();
-	//Pane** generatePane();
 	void start(bool *finished);
 	void loopCycle();
 	//void loopInput();
 	void join();
 	void display();
 	//byte charToCode(char tmp);
-	void loopInput();
-//private:
-/*	void case0();
-	void case1();
-	void case2();
-	void case3();
-	void case4();
-	void case5();
-	void case6();
-	void case7();
-	void case8();
-	void case9();
-	void caseA();
-	void caseB();
-	void caseC();
-	void caseD();
-	void caseE();
-	void caseF();*/
+	void updateInput();
+    //void saveState();
+    //void loadState();
+    void emuControls();
+private:
+
 
 	bool update;
 	bool *finished;
-	//void (Chip8::*opcodes[16])();
+    bool paused;
 	std::thread *cpuEmu;
 	std::thread *render;
-	std::thread *input;
-	std::thread *timer;
+//	std::thread *input;
+//	std::thread *timer;
 
 	char KEYMAP[16];
 
@@ -68,13 +59,16 @@ public:
 	mem_pointer INDEX;
 	mem_pointer STACK[16];
 	
-	byte RAM[4096];
+	//byte RAM[4096];
+    RAM<4096> RAM;
 	byte REG[16];
 	bool SCREEN[32][65];
 	byte SP;
 	bool KEY[16];
 	byte DELAY;
 	byte SOUND;
+
+    size_t accumulator;
 
 	HWND console;
 	RECT r;
@@ -83,8 +77,6 @@ public:
     COORD NewSBSize;
 	CONSOLE_CURSOR_INFO CursorInfo;
 
-	//void ((*OPCODES[])()) = {
-    //void (*OPCODES[])() = {
     ::std::function<void()> OPCODES[16] ={
             [this]() {
             switch (this->current & 0x000F) {
@@ -225,6 +217,10 @@ public:
                     if (this->SCREEN[baseY + y][baseX + x] && (this->RAM[this->INDEX + y] >> (7 - x) & 0x1)) {
                         this->REG[0xF] = 1;
                     }
+                    /*this->SCREEN[baseY + y][64] = this->SCREEN[baseY + y][baseX + x] & (this->RAM[this->INDEX + y] >> (7 - x) & 0x1);
+                    if (this->SCREEN[baseY + y][baseX + x] ^ (219 * (this->RAM[this->INDEX + y] >> (7 - x)))) {
+                        this->SCREEN[baseY + y][baseX + x] = ' ';
+                    }*/
                     this->SCREEN[baseY + y][baseX + x] ^= (this->RAM[this->INDEX + y] >> (7 - x) & 0x1);
                     this->SCREEN[baseY + y][64] = 1;
                 }

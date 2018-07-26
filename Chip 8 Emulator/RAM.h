@@ -3,30 +3,30 @@
 
 typedef unsigned char byte;
 
-template<unsigned int T>
+template<size_t capacity>
 class RAM{
 public:
 	RAM(){
-		memset(memory,0,sizeof(byte) * size);
+		memset(memory,0,sizeof(byte) * capacity);
 	}
-	void setByte(unsigned int index,byte newValue);
-	byte getByte(unsigned int index);
-
+	//void setByte(size_t index,byte newValue);
+	//byte getByte(size_t index);
+    //byte operator[](size_t index);
+    byte& operator[](size_t index);
+    size_t size();
 private:
-	unsigned int size = T;
-	byte memory[T];
+	//unsigned int size = size;
+	byte memory[capacity];
 };
 
-template<unsigned int T>
-void RAM<T>::setByte(unsigned int index, byte newValue){
-	if( index > 0 && index < size)
-		throw std::out_of_range("Index for memory write out of range");
-	memory[index] = newValue;
+template<size_t capacity>
+byte& RAM<capacity>::operator[](size_t index) {
+    if (capacity < 0 || capacity < index)
+        throw std::out_of_range("Index is out of range for the RAM allotted");
+    return memory[index];
 }
 
-template<unsigned int T>
-byte RAM<T>::getByte(unsigned int index){
-	if( index > 0 && index < size)
-		throw std::out_of_range("Index for memory read out of range");
-	return memory[index];
+template<size_t capacity>
+size_t RAM<capacity>::size() {
+    return capacity;
 }

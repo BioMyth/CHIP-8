@@ -1,15 +1,19 @@
 #pragma once
 
 #include "RAM.h"
-template<typename sizeOfPointers,typename sizeOfOPCodes>
+template<typename pointerType,typename OPCodeType>
 class CPU{
 public:
-	CPU(float speed, void *(*opcodes)()):speed(speed),opcodes(opcodes){};
+    CPU(float frequency, std::function<void()> *opcodes) :speed(speed), opcodes(opcodes) {};
 	void cycle();
 
 private:
-	void *(*opcodes)();
+	void std::function<void()> *opcodes;
 	float speed;
 	sizeOfPointers stack[16], PC, INDEX;
 	sizeOfOPCodes current;
 };
+
+/*void cycle(, ) {
+
+}*/
