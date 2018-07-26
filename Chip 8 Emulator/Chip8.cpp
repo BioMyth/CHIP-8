@@ -52,6 +52,7 @@ Chip8::Chip8():PC(0x200),INDEX(0),current(0),SP(0),DELAY(0),SOUND(0),update(fals
     memcpy(&RAM[0], chip8_fontset, 80);
     paused = true;
     accumulator = 0;
+    timer = 0;
 
 	KEYMAP[0x1] = '1';
 	KEYMAP[0x2] = '2';
@@ -107,31 +108,51 @@ bool isKeyPressed(char key){
 }
 
 void Chip8::loopCycle(){
-	std::chrono::time_point<std::chrono::high_resolution_clock> time;
-	
-    time = std::chrono::high_resolution_clock::now() + std::chrono::milliseconds(1000 / CPU_CLOCK);
+	//std::chrono::duration<float, std::milli> currentTime;
+    std::chrono::duration<float, std::milli> lastTime;
+
+    lastTime = std::chrono::steady_clock::now().time_since_epoch();
 	
     while(!*finished){
         emuControls();
 #ifdef DEBUG
         if (paused) std::cout << "Paused" << std::endl;
 #endif
-        if (paused) continue;
+        if (paused) {
+            lastTime = std::chrono::steady_clock::now().time_since_epoch();
+            continue;
+        }
+        
+        std::chrono::duration<float, std::milli> now = std::chrono::steady_clock::now().time_since_epoch();
+        
+        float delta = (now - lastTime).count();
+        lastTime = now;
+        accumulator += delta;
+        timer += delta;
+        
+        if (timer >= 1000.0 / 60) {
+            timer -= 1000.0 / 60;
+            if (this->DELAY)
+                this->DELAY--;
+            if (this->SOUND)
+                this->SOUND--;
+        }
 
-        updateInput();
-		cycle();
-        if(update){
-			update=false;
-			if(render!=nullptr && render->joinable()){
-				render->join();
-				delete render;
-			}
-			render=new std::thread(&Chip8::display, this);
-            //std::thread(&Chip8::display, this).detach();
-		}
-
-		std::this_thread::sleep_until(time);
-		time += std::chrono::milliseconds(1000/CPU_CLOCK);
+        if (accumulator >= 1000.0 / CPU_CLOCK) {
+            accumulator -= 1000.0 / CPU_CLOCK;
+            //if (accumulator > 1000.0 / CPU_CLOCK) abort();
+            updateInput();
+            cycle();
+            if (update) {
+                update = false;
+                //if (render != nullptr && render->joinable()) {
+                //    render->join();
+                //    delete render;
+                //}
+                //render = new std::thread(&Chip8::display, this);
+                std::thread(&Chip8::display, this).detach();
+            }
+        }
 	}
 }
 
@@ -158,6 +179,7 @@ void Chip8::updateInput(){
 }
 
 void Chip8::emuControls() {
+    if (isKeyPressed('0')) *finished = true;
     if (isKeyPressed('9')) paused = true;
     if (paused) {
         if (isKeyPressed('8'))
@@ -189,24 +211,30 @@ void Chip8::join(){
 
 
 void Chip8::display(){
-		char tmp[65];
+    char strBuffer[65 * 32];
+		//char tmp[65];
 		COORD pos={0,0};
-		SetConsoleCursorPosition(hOut,pos);
+		//SetConsoleCursorPosition(hOut,pos);
 		for(int y=0; y < 32; y++){
-			if(SCREEN[y][64]){
-				SCREEN[y][64]=0;
+			//if(SCREEN[y][64]){
+			//	SCREEN[y][64]=0;
 				pos.Y=y;
                 //memcpy(tmp, SCREEN[y], 64);
 				for(int x=0; x < 64; x++){
-					tmp[x]=(SCREEN[y][x] ? (219) : ' ');
+					//tmp[x]=(
+                    strBuffer[y * 64 + x]   = (SCREEN[y][x] ? (219) : ' ');
 				}
-				tmp[64]='\0';
-				SetConsoleCursorPosition(hOut,pos);
-				WriteFile(hOut,tmp,strlen(tmp),NULL,NULL);
-			}
-			pos.Y=33;
-			SetConsoleCursorPosition(hOut,pos);
+				//tmp[64]='\0';
+                strBuffer[y * 65 + 64] = '\n';
+				//SetConsoleCursorPosition(hOut,pos);
+				//WriteFile(hOut,tmp,strlen(tmp),NULL,NULL);
+			//}
+			//pos.Y=33;
+			//SetConsoleCursorPosition(hOut,pos);
 		}
+        strBuffer[65 * 32 - 1] = '\0';
+        SetConsoleCursorPosition(hOut, pos);
+        WriteFile(hOut, strBuffer, 65 * 32 - 1, NULL, NULL);
 }
 
 void Chip8::cycle(){
@@ -222,10 +250,4 @@ void Chip8::cycle(){
 #ifdef DEBUG
     std::cout << "Current instruction is " << std::ios::hex << current << " at location " << PC << std::ios::dec << std::endl;
 #endif
-
-
-    if (this->DELAY)
-        this->DELAY--;
-    if (this->SOUND)
-        this->SOUND--;
 }

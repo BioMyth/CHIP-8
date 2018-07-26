@@ -68,7 +68,8 @@ private:
 	byte DELAY;
 	byte SOUND;
 
-    size_t accumulator;
+    float accumulator;
+    float timer;
 
 	HWND console;
 	RECT r;
