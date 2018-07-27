@@ -7,14 +7,16 @@ bool Input::operator[](int index) {
 }
 
 bool Input::operator[](char index) {
-    TCHAR tmp = toupper(index);
-    VkKeyScanEx(tmp, locale);
-    return this->operator[](tmp & 0xff);
+    //TCHAR tmp = toupper(index);
+    //VkKeyScanEx(tmp, locale);
+    return this->operator[](toupper(index));//tmp & 0xff);
 }
 /*
 Input::Input() {
 memset(keyState, 0, 0xff);
 }*/
+
+
 
 int Input::OnInput(HWND hwnd, WPARAM wParam, LPARAM lParam) {
     UINT dwSize;
@@ -22,22 +24,18 @@ int Input::OnInput(HWND hwnd, WPARAM wParam, LPARAM lParam) {
     GetRawInputData((HRAWINPUT)lParam, RID_INPUT, NULL, &dwSize, sizeof(RAWINPUTHEADER));
     LPBYTE lpb = new BYTE[dwSize];
     if (lpb == NULL)
-    {
         return 0;
-    }
 
     if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize);
-       // OutputDebugString(TEXT("GetRawInputData does not return correct size !\n"));
 
     RAWINPUT* raw = (RAWINPUT*)lpb;
+    if (raw->header.wParam || (raw->data.keyboard.Message != WM_KEYDOWN && raw->data.keyboard.Message != WM_KEYDOWN)) return 1;
 
     if (raw->header.dwType == RIM_TYPEKEYBOARD)
     {
         keyState[raw->data.keyboard.VKey] = !(raw->data.keyboard.Flags & RI_KEY_BREAK);
         if (func) {
-            char param = '\0';
-            param = MapVirtualKeyEx(raw->data.keyboard.VKey, MAPVK_VK_TO_CHAR, locale);
-            func(param);
+            func(MapVirtualKeyEx(raw->data.keyboard.VKey, MAPVK_VK_TO_CHAR, locale));
             func = nullptr;
         }
     }

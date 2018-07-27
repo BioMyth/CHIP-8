@@ -52,10 +52,23 @@ Chip8::Chip8() :Emu(4096, 64, 32), PC(0x200), INDEX(0), current(0), SP(0), DELAY
 	KEYMAP[0x0] = 'X';
 	KEYMAP[0xB] = 'C';
 	KEYMAP[0xF] = 'V';
+
+    InitializeChip8OpCodes(codes);
+#ifdef DEBUG
+#ifdef OPCODE_MAP
+    output.open("map.rec");
+#else
+    output.open("old.rec");
+#endif
+#endif // DEBUG
+
 };
 
 Chip8::~Chip8(){
     finished = true;
+#ifdef DEBUG
+    output.close();
+#endif // DEBUG
 }
 
 
@@ -88,13 +101,9 @@ void Chip8::cycle(float delta){
     renderTimer += delta;
 
     if (update) {
-        renderTimer = 0;
-        update = false;
-    }
-    if (renderTimer >= 1000.f / 20) {
         gpu.setBuffer(SCREEN);
         updateScreen();
-        renderTimer = 0;
+        update = false;
     }
         
     if (timer >= 1000.f / 60) {
@@ -103,23 +112,12 @@ void Chip8::cycle(float delta){
             this->DELAY--;
         if (this->SOUND)
             this->SOUND--;
-       /* if (update) {
-            update = false;
-            gpu.setBuffer(SCREEN);
-            updateScreen();
-        }*/
     }
 
-    if (accumulator >= 1000.f / CPU_CLOCK) {
-        accumulator -= 1000.f / CPU_CLOCK;
+    if (accumulator >= 1000.f / clock) {
+        accumulator -= 1000.f / clock;
         updateInput();
         step();
-        /*
-        if (update) {
-            update = false;
-            gpu.setBuffer(SCREEN);
-            updateScreen();
-        }*/
     }
 }
 
@@ -145,44 +143,35 @@ void Chip8::updateInput(){
         KEY[0xF] = isKeyPressed('V');
 }
 
-/*void Chip8::display(){
-    char strBuffer[65 * 32];
-		//char tmp[65];
-		COORD pos={0,0};
-		//SetConsoleCursorPosition(hOut,pos);
-		for(int y=0; y < 32; y++){
-			//if(SCREEN[y][64]){
-			//	SCREEN[y][64]=0;
-				pos.Y=y;
-                //memcpy(tmp, SCREEN[y], 64);
-				for(int x=0; x < 64; x++){
-					//tmp[x]=(
-                    strBuffer[y * 64 + x]   = (SCREEN[y][x] ? (219) : ' ');
-				}
-				//tmp[64]='\0';
-                strBuffer[y * 65 + 64] = '\n';
-				//SetConsoleCursorPosition(hOut,pos);
-				//WriteFile(hOut,tmp,strlen(tmp),NULL,NULL);
-			//}
-			//pos.Y=33;
-			//SetConsoleCursorPosition(hOut,pos);
-		}
-        strBuffer[65 * 32 - 1] = '\0';
-        //SetConsoleCursorPosition(hOut, pos);
-        //WriteFile(hOut, strBuffer, 65 * 32 - 1, NULL, NULL);
-}*/
 
 void Chip8::step(){
 
     if (this->SOUND) /*Play Sound*/;
-	current=RAM[PC]<<8 | RAM[PC+1];
-	
+#ifdef OPCODE_MAP
+    current = RAM[PC++]<<8 | RAM[PC++];
+
+    opcode_size key;
+    if ( codes.keyExists(key = current & 0xFFFF) );
+    else if (codes.keyExists(key = current & 0xF0FF) );
+    else if (codes.keyExists(key = current & 0xF00F) );
+    else if (codes.keyExists(key = current & 0xF000) );
+    else {
+        //PC += 2;
+        return;
+    }
+    if (key & 0xFF == 0xEE)
+        OutputDebugString(L"Bad Call");
+    codes[key](current, *this);
+#else
+    
+    current = RAM[PC] << 8 | RAM[PC + 1];
     if (((current >> 12) & 0xF) > 0xF)
         throw std::runtime_error("Invalid instruction");
 	
     else
-		(OPCODES[current>>12 & 0xF])();
+		(OPCODES[current>>12 & 0xF])(current);
+#endif  
 #ifdef DEBUG
-    std::cout << "Current instruction is " << std::ios::hex << current << " at location " << PC << std::ios::dec << std::endl;
+    output << "0x" << std::hex << static_cast<unsigned int>(current) << "\t" << std::hex << PC << "\t" << std::hex << STACK[SP] << std::endl;
 #endif
 }

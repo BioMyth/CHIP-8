@@ -166,7 +166,11 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Chip8-opcodes.cpp" />
     <ClCompile Include="Chip8.cpp" />
+    <ClCompile Include="CPU.cpp">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
     <ClCompile Include="Emu.cpp" />
     <ClCompile Include="GPU.cpp" />
     <ClCompile Include="Input.cpp" />

@@ -48,18 +48,18 @@
     <ClCompile Include="RAM.cpp">
       <Filter>Emu\Source</Filter>
     </ClCompile>
+    <ClCompile Include="Chip8-opcodes.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CPU.cpp">
+      <Filter>Emu\Source</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chip8.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SL.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CPU.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="OPCODES.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Chip-8.h">
@@ -75,6 +75,12 @@
       <Filter>Emu\Headers</Filter>
     </ClInclude>
     <ClInclude Include="RAM.h">
+      <Filter>Emu\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="OPCODES.h">
+      <Filter>Emu\Headers</Filter>
+    </ClInclude>
+    <ClInclude Include="CPU.h">
       <Filter>Emu\Headers</Filter>
     </ClInclude>
   </ItemGroup>

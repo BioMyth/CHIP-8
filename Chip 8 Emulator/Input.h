@@ -4,6 +4,7 @@
 #include <exception>
 #include <stdexcept>
 #include <functional>
+#include <cstdint>
 
 class Input {
 public:
@@ -11,6 +12,10 @@ public:
     //~Input();
 
     int OnInput(HWND hwnd, WPARAM wParam, LPARAM lParam);
+
+    int OnKeyDown(HWND hwnd, WPARAM wParam, LPARAM lParam);
+
+    int OnKeyUp(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
     void OnCreate(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
