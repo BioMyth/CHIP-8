@@ -1,11 +1,14 @@
+#pragma once
 #include <windows.h>
 
 #include <stdlib.h>
+#include <stdexcept>
 #include <malloc.h>
 #include <memory.h>
 #include <wchar.h>
 #include <math.h>
 
+#pragma comment(lib, "d2d1.lib")
 #include <d2d1.h>
 #include <d2d1helper.h>
 #include <dwrite.h>
@@ -26,17 +29,10 @@ inline void SafeRelease(Interface ** interfaceToRelease) {
 #define Assert(b)
 #endif
 #endif
-/*
-#ifndef HINST_THISCOMPONENT
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-#define HINST_THISCOMPONENT ((HINSTANCE)&amp;__ImageBase)
-#endif*/
-#ifndef HINST_THISCOMPONENT
-EXTERN_C IMAGE_DOS_HEADER __ImageBase;
-#define HINST_THISCOMPONENT ((HINSTANCE)&amp;__ImageBase)
-#endif
 
-#define CLASSNAME L"D2DGPUDemo"
+
+
+class Emu;
 
 class GPU {
 public:
@@ -46,42 +42,35 @@ public:
     // Register the window class and call methods for instantiating drawing resources
     HRESULT Initialize();
 
-    // Process and dispatch messages
-    void RunMessageLoop();
+    void setBuffer(bool newBuffer[32][64]);
+
+    void setResolution(float x, float y);
+
+    float getResolutionX();
+    float getResolutionY();
+
 private:
     // Initialize device-independent resources
     HRESULT CreateDeviceIndependantResources();
     // Initialize device-dependant resources
-    HRESULT CreateDeviceResources();
+    HRESULT CreateDeviceResources(HWND hwnd);
 
     //Release device-dependent resources
     void DiscardDeviceResources();
 
     // Draw content
-    HRESULT OnRender();
+    HRESULT OnRender(HWND hwnd, WPARAM wParam, LPARAM lParam);
     // Resize the render target
-    void OnResize(UINT width, UINT height);
-    
-    // The windows procedure
-    static LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
+    void OnResize(HWND hwnd, WPARAM wParam, LPARAM lParam);
+
+    void OnCreate(HWND hwnd, WPARAM wParam, LPARAM lParam);
+
+    friend class Emu;
 private:
-    HWND m_hwnd;
+    bool buffer[32][64];
+    float resX, resY;
     ID2D1Factory* factory;
     ID2D1HwndRenderTarget* renderTarget;
     ID2D1SolidColorBrush* whiteBrush;
     ID2D1SolidColorBrush* redBrush;
 };
-
-int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
-    HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-    if (SUCCEEDED(CoInitialize(NULL))) {
-        {
-            GPU gpu;
-            if (SUCCEEDED(gpu.Initialize())) {
-                gpu.RunMessageLoop();
-            }
-        }
-        CoUninitialize();
-    }
-    return 0;
-}

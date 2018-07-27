@@ -1,14 +1,13 @@
 #pragma once
 #ifndef _OP_CODES_H_
 #define _OP_CODES_H_
-#include <iostream>
 #include <fstream>
-#include <thread>
+#include <functional>
 #include <chrono>
 #include <Windows.h>
+#include <winerror.h>
 #include <exception>
-#include <string>
-#include "RAM.h"
+#include "Emu.h"
 
 //	memory map
 //	0x000-0x1FF - Chip 8 interpreter (contains font set in emu)
@@ -23,33 +22,21 @@ typedef unsigned short opcode_size;
 typedef unsigned char byte;
 typedef unsigned short mem_pointer;
 
-class Chip8{
+class Chip8: public Emu{
 public:
 	Chip8();
 	~Chip8();
 
 	void loadProgram(char* name);
-	void cycle();
-	void start(bool *finished);
-	void loopCycle();
-	//void loopInput();
-	void join();
-	void display();
-	//byte charToCode(char tmp);
+    void step();
+	void cycle(float delta);
+	//void display();
 	void updateInput();
-    //void saveState();
-    //void loadState();
-    void emuControls();
+
 private:
 
 
 	bool update;
-	bool *finished;
-    bool paused;
-	std::thread *cpuEmu;
-	std::thread *render;
-//	std::thread *input;
-//	std::thread *timer;
 
 	char KEYMAP[16];
 
@@ -59,10 +46,8 @@ private:
 	mem_pointer INDEX;
 	mem_pointer STACK[16];
 	
-	//byte RAM[4096];
-    RAM<4096> RAM;
 	byte REG[16];
-	bool SCREEN[32][65];
+	bool SCREEN[32][64];
 	byte SP;
 	bool KEY[16];
 	byte DELAY;
@@ -71,87 +56,92 @@ private:
     float accumulator;
     float timer;
 
-	HWND console;
-	RECT r;
-	HANDLE hOut;
-    CONSOLE_SCREEN_BUFFER_INFO SBInfo;
-    COORD NewSBSize;
-	CONSOLE_CURSOR_INFO CursorInfo;
+    float renderTimer = 0;
 
     ::std::function<void()> OPCODES[16] ={
+            //0x00--
             [this]() {
-            switch (this->current & 0x000F) {
-            case(0x0E):			//Clears the screen.
-                this->PC = this->STACK[this->SP--];
-                break;
-            case(0x00):			//Returns from a subroutine.
+            switch (this->current & 0x00FF) {
+            case(0xE0):			//Clears the screen.
                 for (int y = 0; y < 32; y++) {
                     for (int x = 0; x < 64; x++)
                         this->SCREEN[y][x] = 0;
-                    this->SCREEN[y][64] = 1;
                 }
-                //this->update=true;
+                this->update = true;
+                break;
+            case(0xEE):			//Returns from a subroutine.
+                this->PC = this->STACK[this->SP--];
+                break;
+                // NOOP
+            case(0x00):
                 break;
             default:
-                std::cout << "Could not find opcode(0x00): " << std::hex << std::uppercase << this->current << std::nouppercase << std::dec << std::endl;
+                //throw std::runtime_error("Could not find opcode(0x00)");
+                //std::cout << "Could not find opcode(0x00): " << std::hex << std::uppercase << this->current << std::nouppercase << std::dec << std::endl;
                 break;
             }
             this->PC += 2;
         },
-
+            // 0x1NNN
             // Jumps to address NNN.
             [this]() {
             this->PC = this->current & 0x0FFF;
         },
 
+            // 0x2NNN
             // Calls subroutine at NNN.
             [this]() {
             this->STACK[++this->SP] = this->PC;
             this->PC = this->current & 0x0FFF;
         },
-
+            // 0x3XRR
             // Skips the next instruction if REG[X] equals NN.
             [this]() {
             this->PC += (this->REG[this->current >> 8 & 0x0F] == (0x00FF & this->current) ? 4 : 2);
         },
-
+            // 0x4XRR
             // Skips the next instruction if REG[X] doesn't equal NN.
             [this]() {
             this->PC += (this->REG[this->current >> 8 & 0x0F] != (0x00FF & this->current) ? 4 : 2);
         },
-
+            // 0x5XY0
             // Skips the next instruction if REG[X] equals REG[Y].
             [this]() {
             this->PC += (this->REG[this->current >> 8 & 0x0F] == this->REG[this->current >> 4 & 0x0F] ? 4 : 2);
         },
-
+            // 0x6XRR
             // Sets REG[X] to NN.
             [this]() {
             this->REG[this->current >> 8 & 0x0F] = this->current & 0x00FF;
             this->PC += 2;
         },
-
+            // 0x7XRR
             // Adds NN to REG[X].
             [this]() {
             this->REG[this->current >> 8 & 0x0F] += this->current & 0x00FF;
             this->PC += 2;
         },
-
+            // 0x8---
             [this]() {
             switch (this->current & 0x000F) {
-            case(0x0):				// Sets REG[X] to the value of REG[Y].
+            // 0x8XY0
+            // Sets REG[X] to the value of REG[Y].
+            case(0x0):
                 this->REG[this->current >> 8 & 0x0F] = this->REG[this->current >> 4 & 0x0F];
                 break;
-
-            case(0x1):				// Sets VX to REG[X] or REG[Y].
+            // 0x8XY1
+            // Sets VX to REG[X] or REG[Y].
+            case(0x1):
                 this->REG[this->current >> 8 & 0x0F] |= this->REG[this->current >> 4 & 0x0F];
                 break;
-
-            case(0x2):				// Sets REG[X] to REG[X] and REG[Y].
+            // 0x8XY2
+            // Sets REG[X] to REG[X] and REG[Y].
+            case(0x2):
                 this->REG[this->current >> 8 & 0x0F] &= this->REG[this->current >> 4 & 0x0F];
                 break;
-
-            case(0x3):				// 	Sets REG[X] to REG[X] xor REG[Y].
+            // 0x8XY3
+            // Sets REG[X] to REG[X] xor REG[Y].
+            case(0x3):
                 this->REG[this->current >> 8 & 0x0F] ^= this->REG[this->current >> 4 & 0x0F];
                 break;
 
@@ -199,7 +189,7 @@ private:
             this->PC = (0x0FFF & this->current) + this->REG[0];
         },
 
-            // 	Sets REG[X] to the result of a bitwise and operation on a random number and NN.
+            // 	Sets REG[X] to the result of an & operation on a random number and NN.
             [this]() {
             this->REG[this->current >> 8 & 0x0F] = rand() & (this->current & 0x00FF);
             this->PC += 2;
@@ -213,32 +203,32 @@ private:
             byte baseY = this->REG[(this->current >> 4) & 0x0F];
             this->REG[0xF] = 0;
             for (int y = 0; y < (this->current & 0xF); y++) {
-                for (int x = 0; x < 8; x++) {
-
+                for (int x = 0; x <= 8; x++) {
                     if (this->SCREEN[baseY + y][baseX + x] && (this->RAM[this->INDEX + y] >> (7 - x) & 0x1)) {
                         this->REG[0xF] = 1;
                     }
-                    /*this->SCREEN[baseY + y][64] = this->SCREEN[baseY + y][baseX + x] & (this->RAM[this->INDEX + y] >> (7 - x) & 0x1);
-                    if (this->SCREEN[baseY + y][baseX + x] ^ (219 * (this->RAM[this->INDEX + y] >> (7 - x)))) {
-                        this->SCREEN[baseY + y][baseX + x] = ' ';
-                    }*/
                     this->SCREEN[baseY + y][baseX + x] ^= (this->RAM[this->INDEX + y] >> (7 - x) & 0x1);
-                    this->SCREEN[baseY + y][64] = 1;
                 }
             }
-            this->update = true;
+            //if (REG[0xf])
+                this->update = true;
             this->PC += 2;
         },
 
             [this]() {
             switch (this->current & 0xFF) {
             case(0x9E):				// Skips the next instruction if the key stored in REG[X] is pressed.
-                if (this->KEY[this->REG[this->current >> 8 & 0xF]])
+                if (input[KEYMAP[REG[current >> 8 & 0xf]]])//this->KEY[this->REG[this->current >> 8 & 0xF]])
                     this->PC += 2;
                 break;
             case(0xA1):				//	Skips the next instruction if the key stored in REG[X] isn't pressed.
-                if (!this->KEY[this->REG[this->current >> 8 & 0xF]])
+            {
+                int tmp = REG[current >> 8 & 0xf];
+                tmp;
+                if (!input[KEYMAP[tmp]])//this->KEY[this->REG[this->current >> 8 & 0xF]])
                     this->PC += 2;
+            }
+
                 break;
             }
             this->PC += 2;
@@ -253,7 +243,7 @@ private:
 
             case(0x0A):
             {
-                bool currentKeys[16];
+                /*bool currentKeys[16];
                 bool found = false;
                 for (int i = 0; i < 0xF; i++)
                     currentKeys[i] = this->KEY[i];
@@ -265,7 +255,17 @@ private:
                     }
                 }
                 if (found)
-                    this->PC -= 2;
+                    this->PC -= 2;*/
+                paused = true;
+                input.blockForInput([=](char param)->void {
+                    for (int i = 0; i < 0xF; i++) {
+                        if (param == KEYMAP[i]) {
+                            this->REG[this->current >> 8 & 0xf] = i;
+                            paused = false;
+                            break;
+                        }
+                    }
+                });
                 break;
             }
             case(0x15):

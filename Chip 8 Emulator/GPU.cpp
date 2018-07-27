@@ -2,7 +2,7 @@
 
 
 
-GPU::GPU() : m_hwnd(nullptr), factory(nullptr), renderTarget(nullptr), whiteBrush(nullptr), redBrush(nullptr) {};
+GPU::GPU() : factory(nullptr), renderTarget(nullptr), whiteBrush(nullptr), redBrush(nullptr) {};
 
 GPU::~GPU() {
     SafeRelease(&factory);
@@ -11,70 +11,22 @@ GPU::~GPU() {
     SafeRelease(&redBrush);
 }
 
-void GPU::RunMessageLoop() {
-    MSG msg;
-    while (GetMessage(&amp;msg, NULL, 0, 0)) {
-        TranslateMessage(&amp;msg);
-        DispatchMessage(&amp;msg);
-    }
-}
-
 HRESULT GPU::Initialize() {
     HRESULT hr = CreateDeviceIndependantResources();
-    if (SUCCEEDED(hr)) {
-        WNDCLASSEX wcex = { sizeof(WNDCLASSEX) };
-        wcex.style = CS_HREDRAW | CS_VREDRAW;
-        wcex.lpfnWndProc = GPU::WndProc;
-        wcex.cbClsExtra = 0;
-        wcex.cbWndExtra = sizeof(LONG_PTR);
-        wcex.hInstance = HINST_THISCOMPONENT;
-        wcex.hbrBackground = NULL;
-        wcex.lpszMenuName = NULL;
-        wcex.hCursor = LoadCursor(NULL, IDI_APPLICATION);
-        wcex.lpszClassName = CLASSNAME;
-        RegisterClass(&amp;wcex);
-
-        // Because the CreateWindow function takes its size in pixels,
-        // obtain the system DPI and use it to scale the window size.
-        FLOAT dpiX, dpiY;
-
-        // The factory returns the current system DPI. This is also the value it will use
-        // to create its own windows.
-        factory->GetDesktopDpi(&amp;dpiX, &amp;dpiY);
-
-        // Create the window
-        m_hwnd = CreateWindow(
-            CLASSNAME,
-            L"CHIP8 Direct2D!!!!",
-            WS_OVERLAPPEDWINDOW,
-            CW_USEDEFAULT,
-            CW_USEDEFAULT,
-            static_cast<UINT>(ceil(640.f * dpiX * 96.f)),
-            static_cast<UINT>(ceil(480.f * dpiY * 96.f)),
-            NULL,
-            NULL,
-            HINST_THISCOMPONENT,
-            this);
-        hr = m_hwnd ? S_OK : E_FAIL;
-        if (SUCCEEDED(hr)) {
-            ShowWindow(m_hwnd, SW_SHOWNORMAL);
-            UpdateWindow(m_hwnd);
-        }
-    }
     return hr;
 }
 
 HRESULT GPU::CreateDeviceIndependantResources() {
     HRESULT hr = S_OK;
-    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &amp;factory);
+    hr = D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, &factory);
     return hr;
 }
 
-HRESULT GPU::CreateDeviceResources() {
+HRESULT GPU::CreateDeviceResources(HWND hwnd) {
     HRESULT hr = S_OK;
     if (!renderTarget) {
         RECT rc;
-        GetClientRect(m_hwnd, &amp;rc);
+        GetClientRect(hwnd, &rc);
 
         D2D1_SIZE_U size = D2D1::SizeU(
             rc.right - rc.left,
@@ -84,150 +36,69 @@ HRESULT GPU::CreateDeviceResources() {
         // Create a Direct2D render target.
         hr = factory->CreateHwndRenderTarget(
             D2D1::RenderTargetProperties(),
-            D2D1::HwndRenderTargetProperties(m_hwnd, size),
-            &amp; renderTarget);
+            D2D1::HwndRenderTargetProperties(hwnd, size),
+            & renderTarget);
         if (SUCCEEDED(hr)) {
-            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &amp; whiteBrush);
+            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &whiteBrush);
         }
         if (SUCCEEDED(hr)) {
-            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkRed), &amp; redBrush);
+            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkRed), &redBrush);
         }
     }
     return hr;
 }
 
 void GPU::DiscardDeviceResources() {
-    SafeRelease(&amp;renderTarget);
-    SafeRelease(&amp;whiteBrush);
-    SafeRelease(&amp;redBrush);
+    SafeRelease(&renderTarget);
+    SafeRelease(&whiteBrush);
+    SafeRelease(&redBrush);
 }
 
-LRESULT CALLBACK GPU::WndProc(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    LRESULT result = 0;
-
-    if (message == WM_CREATE)
-    {
-        LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
-        GPU *gpu = (GPU *)pcs->lpCreateParams;
-
-        ::SetWindowLongPtrW(
-            hwnd,
-            GWLP_USERDATA,
-            PtrToUlong(gpu)
-        );
-
-        result = 1;
-    }
-    else
-    {
-        GPU *gpu = reinterpret_cast<GPU *>(static_cast<LONG_PTR>(
-            ::GetWindowLongPtrW(
-                hwnd,
-                GWLP_USERDATA
-            )));
-
-        bool wasHandled = false;
-
-        if (gpu)
-        {
-            switch (message)
-            {
-            case WM_SIZE:
-            {
-                UINT width = LOWORD(lParam);
-                UINT height = HIWORD(lParam);
-                gpu->OnResize(width, height);
-            }
-            result = 0;
-            wasHandled = true;
-            break;
-
-            case WM_DISPLAYCHANGE:
-            {
-                InvalidateRect(hwnd, NULL, FALSE);
-            }
-            result = 0;
-            wasHandled = true;
-            break;
-
-            case WM_PAINT:
-            {
-                gpu->OnRender();
-                ValidateRect(hwnd, NULL);
-            }
-            result = 0;
-            wasHandled = true;
-            break;
-
-            case WM_DESTROY:
-            {
-                PostQuitMessage(0);
-            }
-            result = 1;
-            wasHandled = true;
-            break;
-            }
-        }
-
-        if (!wasHandled)
-        {
-            result = DefWindowProc(hwnd, message, wParam, lParam);
-        }
-    }
-
-    return result;
-}
-
-HRESULT GPU::OnRender() {
+HRESULT GPU::OnRender(HWND hwnd, WPARAM wParam, LPARAM lParam) {
     HRESULT hr = S_OK;
-    hr = CreateDeviceResources();
+    hr = CreateDeviceResources(hwnd);
     if (SUCCEEDED(hr)) {
         renderTarget->BeginDraw();
         renderTarget->SetTransform(D2D1::Matrix3x2F::Identity());
-        renderTarget->Clear(D2D1::ColorF(D2D1::ColorF::White));
+        renderTarget->Clear(D2D1::ColorF(D2D1::ColorF::Black));
         D2D1_SIZE_F rtSize = renderTarget->GetSize();
 
         // Draw a grid background.
-        int width = static_cast<int>(rtSize.width);
-        int height = static_cast<int>(rtSize.height);
+        int width = rtSize.width;
+        int height = rtSize.height;
 
-        for (int x = 0; x < width; x += 10)
+        float scaleX = width / resX;
+        float scaleY = height / resY;
+
+        /*
+        for (int x = 0; x < resX; x ++)
         {
             renderTarget->DrawLine(
-                D2D1::Point2F(static_cast<FLOAT>(x), 0.0f),
-                D2D1::Point2F(static_cast<FLOAT>(x), rtSize.height),
+                D2D1::Point2F(static_cast<FLOAT>(x) * scaleX, 0.0f),
+                D2D1::Point2F(static_cast<FLOAT>(x) * scaleX, resY * scaleY),
+                whiteBrush,
+                0.5f
+            );
+        }*/
+        /*
+        for (int y = 0; y < resY; y ++)
+        {
+            renderTarget->DrawLine(
+                D2D1::Point2F(0.0f, static_cast<FLOAT>(y) * scaleY),
+                D2D1::Point2F(resX * scaleX, static_cast<FLOAT>(y) * scaleY),
                 whiteBrush,
                 0.5f
             );
         }
-
-        for (int y = 0; y < height; y += 10)
-        {
-            renderTarget->DrawLine(
-                D2D1::Point2F(0.0f, static_cast<FLOAT>(y)),
-                D2D1::Point2F(rtSize.width, static_cast<FLOAT>(y)),
-                whiteBrush,
-                0.5f
-            );
+        */
+        for (int y = 0; y < 32; y++) {
+            for (int x = 0; x < 64; x++) {
+                if (buffer[y][x]) {
+                    D2D1_RECT_F rect = D2D1::RectF(scaleX * x - 1, scaleY * y - 1, scaleX * (x + 1) + 1, scaleY * (y + 1) + 1);
+                    renderTarget->FillRectangle(&rect, whiteBrush);
+                }
+            }
         }
-
-        // Draw two rectangles.
-        D2D1_RECT_F rectangle1 = D2D1::RectF(
-            rtSize.width / 2 - 50.0f,
-            rtSize.height / 2 - 50.0f,
-            rtSize.width / 2 + 50.0f,
-            rtSize.height / 2 + 50.0f
-        );
-
-        D2D1_RECT_F rectangle2 = D2D1::RectF(
-            rtSize.width / 2 - 100.0f,
-            rtSize.height / 2 - 100.0f,
-            rtSize.width / 2 + 100.0f,
-            rtSize.height / 2 + 100.0f
-        );
-        renderTarget->FillRectangle(&amp;rectangle1, whiteBrush);
-        renderTarget->FillRectangle(&amp;rectangle2, redBrush);
         hr = renderTarget->EndDraw();
     }
     if (hr == D2DERR_RECREATE_TARGET) {
@@ -237,8 +108,43 @@ HRESULT GPU::OnRender() {
     return hr;
 }
 
-void GPU::OnResize(UINT width, UINT height) {
+void GPU::OnResize(HWND hwnd, WPARAM wParam, LPARAM lParam) {
+
     if (renderTarget) {
+        UINT width = LOWORD(lParam);
+        UINT height = HIWORD(lParam);
         renderTarget->Resize(D2D1::SizeU(width, height));
     }
+}
+
+void GPU::OnCreate(HWND hwnd, WPARAM wParam, LPARAM lParam) {
+    //HRESULT hr = CreateDeviceIndependantResources();
+    //return hr;
+    if (CreateDeviceIndependantResources() != S_OK)
+        throw std::runtime_error("GPU could not create Device independant resources");
+    /*LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
+    GPU *gpu = (GPU *)pcs->lpCreateParams;
+
+    ::SetWindowLongPtrW(
+        hwnd,
+        GWLP_USERDATA,
+        PtrToUlong(gpu)
+    );*/
+}
+
+void GPU::setBuffer(bool newBuffer[32][64]) {
+    memcpy(buffer, newBuffer, 32 * 64);
+}
+
+void GPU::setResolution(float x, float y) {
+    resX = x;
+    resY = y;
+}
+
+float GPU::getResolutionX() {
+    return resX;
+}
+
+float GPU::getResolutionY() {
+    return resY;
 }

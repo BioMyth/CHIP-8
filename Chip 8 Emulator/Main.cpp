@@ -30,7 +30,7 @@ int main(){
         if (stop) break;
     }
     std::cout << "Starting" << std::endl;
-	tmp.start(&hasEnded);
+	tmp.start();
     std::cout << "Joining" << std::endl;
 	tmp.join();
 	std::cout<<"All Done"<<std::endl;
