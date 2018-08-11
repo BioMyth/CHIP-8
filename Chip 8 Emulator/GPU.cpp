@@ -2,13 +2,12 @@
 
 
 
-GPU::GPU() : factory(nullptr), renderTarget(nullptr), whiteBrush(nullptr), redBrush(nullptr) {};
+GPU::GPU() : factory(nullptr), renderTarget(nullptr), mainBrush(nullptr), buffer(nullptr) {};
 
 GPU::~GPU() {
     SafeRelease(&factory);
     SafeRelease(&renderTarget);
-    SafeRelease(&whiteBrush);
-    SafeRelease(&redBrush);
+    SafeRelease(&mainBrush);
 }
 
 HRESULT GPU::Initialize() {
@@ -39,10 +38,13 @@ HRESULT GPU::CreateDeviceResources(HWND hwnd) {
             D2D1::HwndRenderTargetProperties(hwnd, size),
             & renderTarget);
         if (SUCCEEDED(hr)) {
-            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::White), &whiteBrush);
-        }
-        if (SUCCEEDED(hr)) {
-            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::DarkRed), &redBrush);
+#ifdef DEBUG
+            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Magenta), &mainBrush);
+#else
+            hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &mainBrush);
+#endif // DEBUG
+
+            
         }
     }
     return hr;
@@ -50,8 +52,7 @@ HRESULT GPU::CreateDeviceResources(HWND hwnd) {
 
 void GPU::DiscardDeviceResources() {
     SafeRelease(&renderTarget);
-    SafeRelease(&whiteBrush);
-    SafeRelease(&redBrush);
+    SafeRelease(&mainBrush);
 }
 
 HRESULT GPU::OnRender(HWND hwnd, WPARAM wParam, LPARAM lParam) {
@@ -64,39 +65,17 @@ HRESULT GPU::OnRender(HWND hwnd, WPARAM wParam, LPARAM lParam) {
         D2D1_SIZE_F rtSize = renderTarget->GetSize();
 
         // Draw a grid background.
-        int width = rtSize.width;
-        int height = rtSize.height;
+        float width = static_cast<float>(rtSize.width);
+        float height = static_cast<float>(rtSize.height);
 
-        float scaleX = width / resX;
-        float scaleY = height / resY;
+        float scaleX = width / static_cast<float>(resX);
+        float scaleY = height / static_cast<float>(resY);
 
-        /*
-        for (int x = 0; x < resX; x ++)
-        {
-            renderTarget->DrawLine(
-                D2D1::Point2F(static_cast<FLOAT>(x) * scaleX, 0.0f),
-                D2D1::Point2F(static_cast<FLOAT>(x) * scaleX, resY * scaleY),
-                whiteBrush,
-                0.5f
-            );
-        }*/
-        /*
-        for (int y = 0; y < resY; y ++)
-        {
-            renderTarget->DrawLine(
-                D2D1::Point2F(0.0f, static_cast<FLOAT>(y) * scaleY),
-                D2D1::Point2F(resX * scaleX, static_cast<FLOAT>(y) * scaleY),
-                whiteBrush,
-                0.5f
-            );
-        }
-        */
-        for (int y = 0; y < 32; y++) {
-            for (int x = 0; x < 64; x++) {
-                if (buffer[y][x]) {
-                    D2D1_RECT_F rect = D2D1::RectF(scaleX * x - 1, scaleY * y - 1, scaleX * (x + 1) + 1, scaleY * (y + 1) + 1);
-                    renderTarget->FillRectangle(&rect, whiteBrush);
-                }
+        for (size_t y = 0; y < resY; y++) {
+            for (size_t x = 0; x < resX; x++) {
+                D2D1_RECT_F rect = D2D1::RectF(scaleX * x - 1, scaleY * y - 1, scaleX * (x + 1) + 1, scaleY * (y + 1) + 1);
+                mainBrush->SetColor(D2D1::ColorF(buffer[y][x]));
+                renderTarget->FillRectangle(&rect, mainBrush);
             }
         }
         hr = renderTarget->EndDraw();
@@ -118,33 +97,45 @@ void GPU::OnResize(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 }
 
 void GPU::OnCreate(HWND hwnd, WPARAM wParam, LPARAM lParam) {
-    //HRESULT hr = CreateDeviceIndependantResources();
-    //return hr;
     if (CreateDeviceIndependantResources() != S_OK)
         throw std::runtime_error("GPU could not create Device independant resources");
-    /*LPCREATESTRUCT pcs = (LPCREATESTRUCT)lParam;
-    GPU *gpu = (GPU *)pcs->lpCreateParams;
-
-    ::SetWindowLongPtrW(
-        hwnd,
-        GWLP_USERDATA,
-        PtrToUlong(gpu)
-    );*/
 }
 
-void GPU::setBuffer(bool newBuffer[32][64]) {
-    memcpy(buffer, newBuffer, 32 * 64);
+void GPU::setBuffer(uint32_t **&newBuffer) {
+    buffer = newBuffer;
 }
 
-void GPU::setResolution(float x, float y) {
+void GPU::InitializeBuffer() {
+    if (buffer != nullptr) ClearBuffer();
+    
+    buffer = new uint32_t *[resY];
+    
+    for (size_t y = 0; y < resY; y++) {
+    
+        buffer[y] = new uint32_t [resX];
+        for (size_t x = 0; x < resX; x++)
+            buffer[y][x] = D2D1::ColorF::Magenta;
+    }
+}
+
+void GPU::ClearBuffer() {
+    if (buffer == nullptr) return;
+    for (size_t y = 0; y < resY; y++)
+        delete[] buffer[y];
+    delete[] buffer;
+    buffer = nullptr;
+}
+
+void GPU::setResolution(size_t x, size_t y) {
     resX = x;
     resY = y;
+    InitializeBuffer();
 }
 
-float GPU::getResolutionX() {
+size_t GPU::getResolutionX() {
     return resX;
 }
 
-float GPU::getResolutionY() {
+size_t GPU::getResolutionY() {
     return resY;
 }

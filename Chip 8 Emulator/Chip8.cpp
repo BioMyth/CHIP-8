@@ -36,6 +36,8 @@ Chip8::Chip8() :Emu(4096, 64, 32), PC(0x200), INDEX(0), current(0), SP(0), DELAY
     accumulator = 0;
     timer = 0;
 
+
+
 	KEYMAP[0x1] = '1';
 	KEYMAP[0x2] = '2';
 	KEYMAP[0x3] = '3';
@@ -101,7 +103,6 @@ void Chip8::cycle(float delta){
     renderTimer += delta;
 
     if (update) {
-        gpu.setBuffer(SCREEN);
         updateScreen();
         update = false;
     }
@@ -119,6 +120,25 @@ void Chip8::cycle(float delta){
         updateInput();
         step();
     }
+}
+
+void Chip8::updateScreen() {
+    size_t resX = gpu.getResolutionX();
+    size_t resY = gpu.getResolutionY();
+    
+    uint32_t **tmpBuffer;
+    
+    tmpBuffer = new uint32_t *[resY];
+    
+    for (size_t y = 0; y < resY; y++) {
+        tmpBuffer[y] = new uint32_t[resX];
+        for (size_t x = 0; x < resX; x++)
+            tmpBuffer[y][x] = RGB(255, 255, 255) * SCREEN[y][x];
+    }
+
+    gpu.setBuffer(tmpBuffer);
+    
+    Emu::updateScreen();
 }
 
 void Chip8::updateInput(){
@@ -155,12 +175,8 @@ void Chip8::step(){
     else if (codes.keyExists(key = current & 0xF0FF) );
     else if (codes.keyExists(key = current & 0xF00F) );
     else if (codes.keyExists(key = current & 0xF000) );
-    else {
-        //PC += 2;
-        return;
-    }
-    if (key & 0xFF == 0xEE)
-        OutputDebugString(L"Bad Call");
+    else
+        throw std::runtime_error("Invalid instruction");
     codes[key](current, *this);
 #else
     

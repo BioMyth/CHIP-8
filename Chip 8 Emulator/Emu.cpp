@@ -7,7 +7,7 @@ EXTERN_C IMAGE_DOS_HEADER __ImageBase;
 
 #define CLASSNAME L"D2DGPUDemo"
 
-Emu::Emu(size_t RAMSize, float resX, float resY): finished(true), paused(true), RAM(RAMSize) {
+Emu::Emu(size_t RAMSize, size_t resX, size_t resY): finished(true), paused(true), RAM(RAMSize) {
     gpu.setResolution(resX, resY);
 };
 
@@ -58,7 +58,7 @@ void Emu::start() {
 void Emu::updateScreen() {
     //if (UpdateWindow(hwnd));
         //throw std::runtime_error("Could not send update window message");
-    if (!InvalidateRect(hwnd, NULL, true));
+    InvalidateRect(hwnd, NULL, true);
 }
 
 HRESULT Emu::createWindow() {

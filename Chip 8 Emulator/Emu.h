@@ -10,7 +10,7 @@ typedef std::chrono::duration<float, std::milli> TimeStamp;
 
 class Emu {
 public:
-    Emu(size_t RAMSize, float resX, float resY);
+    Emu(size_t RAMSize, size_t resX, size_t resY);
     ~Emu();
 
     virtual void loadProgram(char* name) = 0;

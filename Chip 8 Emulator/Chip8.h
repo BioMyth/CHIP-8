@@ -18,7 +18,7 @@
 
 //in hz
 //#define CPU_CLOCK 540//600
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
     #include <iomanip>
@@ -27,9 +27,9 @@
 
 #define OPCODE_MAP
 
-typedef unsigned short opcode_size;
-typedef unsigned char byte;
-typedef unsigned short mem_pointer;
+typedef uint16_t opcode_size;
+typedef uint8_t byte;
+typedef uint16_t mem_pointer;
 
 //void InitializeChip8OpCodes(OpCodes<opcode_size, Chip8> &codes);
 
@@ -45,7 +45,9 @@ public:
 	//void display();
 	void updateInput();
 
-    friend void InitializeChip8OpCodes(OpCodes<opcode_size, Chip8> &codes);
+    void updateScreen();
+
+    //friend void InitializeChip8OpCodes(OpCodes<opcode_size, Chip8> &codes);
 
 private:
 
@@ -79,7 +81,7 @@ private:
     std::ofstream output;
 #endif
 
-    ::std::function<void(opcode_size)> OPCODES[16] ={
+    /*::std::function<void(opcode_size)> OPCODES[16] ={
             //0x00--
             [this](opcode_size current) {
             switch (current & 0x00FF) {
@@ -263,19 +265,6 @@ private:
 
             case(0x0A):
             {
-                /*bool currentKeys[16];
-                bool found = false;
-                for (int i = 0; i < 0xF; i++)
-                    currentKeys[i] = this->KEY[i];
-                for (int i = 0; i < 0xF; i++) {
-                    if (currentKeys[i] != this->KEY[i] && this->KEY[i]) {
-                        this->REG[current >> 8 & 0xF] = i;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found)
-                    this->PC -= 2;*/
                 paused = true;
                 input.blockForInput([=](char param)->void {
                     for (int i = 0; i < 0xF; i++) {
@@ -322,6 +311,6 @@ private:
             }
             this->PC += 2;
         }
-    };
+    };*/
 };
 #endif

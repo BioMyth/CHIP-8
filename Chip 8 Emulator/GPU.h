@@ -30,6 +30,14 @@ inline void SafeRelease(Interface ** interfaceToRelease) {
 #endif
 #endif
 
+inline uint32_t RGBTOCOLOR(uint8_t r,uint8_t g,uint8_t b) {
+    uint32_t ret = r & 0xff;
+    ret <<= 16;
+    ret |= g & 0xff;
+    ret <<= 16;
+    ret |= b & 0xff;
+    return ret;
+}
 
 
 class Emu;
@@ -42,12 +50,12 @@ public:
     // Register the window class and call methods for instantiating drawing resources
     HRESULT Initialize();
 
-    void setBuffer(bool newBuffer[32][64]);
+    void setBuffer(uint32_t **&newBuffer);
 
-    void setResolution(float x, float y);
+    void setResolution(size_t x, size_t y);
 
-    float getResolutionX();
-    float getResolutionY();
+    size_t getResolutionX();
+    size_t getResolutionY();
 
 private:
     // Initialize device-independent resources
@@ -65,12 +73,14 @@ private:
 
     void OnCreate(HWND hwnd, WPARAM wParam, LPARAM lParam);
 
+    void InitializeBuffer();
+    void ClearBuffer();
+
     friend class Emu;
 private:
-    bool buffer[32][64];
-    float resX, resY;
+    uint32_t **buffer;
+    size_t resX, resY;
     ID2D1Factory* factory;
     ID2D1HwndRenderTarget* renderTarget;
-    ID2D1SolidColorBrush* whiteBrush;
-    ID2D1SolidColorBrush* redBrush;
+    ID2D1SolidColorBrush* mainBrush;
 };

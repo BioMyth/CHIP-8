@@ -29,15 +29,12 @@ int Input::OnInput(HWND hwnd, WPARAM wParam, LPARAM lParam) {
     if (GetRawInputData((HRAWINPUT)lParam, RID_INPUT, lpb, &dwSize, sizeof(RAWINPUTHEADER)) != dwSize);
 
     RAWINPUT* raw = (RAWINPUT*)lpb;
-    if (raw->header.wParam || (raw->data.keyboard.Message != WM_KEYDOWN && raw->data.keyboard.Message != WM_KEYDOWN)) return 1;
+    if (raw->header.dwType != RIM_TYPEKEYBOARD || raw->header.wParam || (raw->data.keyboard.Message != WM_KEYDOWN && raw->data.keyboard.Message != WM_KEYUP)) return 1;
 
-    if (raw->header.dwType == RIM_TYPEKEYBOARD)
-    {
-        keyState[raw->data.keyboard.VKey] = !(raw->data.keyboard.Flags & RI_KEY_BREAK);
-        if (func) {
-            func(MapVirtualKeyEx(raw->data.keyboard.VKey, MAPVK_VK_TO_CHAR, locale));
-            func = nullptr;
-        }
+    keyState[raw->data.keyboard.VKey] = !(raw->data.keyboard.Flags & RI_KEY_BREAK);
+    if (func) {
+        func(MapVirtualKeyEx(raw->data.keyboard.VKey, MAPVK_VK_TO_CHAR, locale));
+        func = nullptr;
     }
 
     delete[] lpb;
