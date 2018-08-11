@@ -1,4 +1,4 @@
-#include "OPCODES.h"
+#include "OpCodes.h"
 #include "Chip8.h"
 
 void Chip8::InitializeChip8OpCodes(OpCodes<opcode_size, Chip8> &codes){

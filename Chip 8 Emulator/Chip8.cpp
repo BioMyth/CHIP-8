@@ -56,21 +56,21 @@ Chip8::Chip8() :Emu(4096, 64, 32), PC(0x200), INDEX(0), current(0), SP(0), DELAY
 	KEYMAP[0xF] = 'V';
 
     InitializeChip8OpCodes(codes);
-#ifdef DEBUG
+#ifdef EMU_DEBUG
 #ifdef OPCODE_MAP
     output.open("map.rec");
 #else
     output.open("old.rec");
 #endif
-#endif // DEBUG
+#endif // EMU_DEBUG
 
 };
 
 Chip8::~Chip8(){
     finished = true;
-#ifdef DEBUG
+#ifdef EMU_DEBUG
     output.close();
-#endif // DEBUG
+#endif // EMU_DEBUG
 }
 
 
@@ -78,6 +78,8 @@ void Chip8::loadProgram(char* name){
 	std::ifstream in;
 
 	in.open(name,std::ios::binary);
+    if (in.fail())
+        throw std::runtime_error("File cannot be opened");
 	
 	int i = 0x200;
 	
@@ -187,7 +189,7 @@ void Chip8::step(){
     else
 		(OPCODES[current>>12 & 0xF])(current);
 #endif  
-#ifdef DEBUG
+#ifdef EMU_DEBUG
     output << "0x" << std::hex << static_cast<unsigned int>(current) << "\t" << std::hex << PC << "\t" << std::hex << STACK[SP] << std::endl;
 #endif
 }

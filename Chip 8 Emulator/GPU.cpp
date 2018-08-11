@@ -38,11 +38,11 @@ HRESULT GPU::CreateDeviceResources(HWND hwnd) {
             D2D1::HwndRenderTargetProperties(hwnd, size),
             & renderTarget);
         if (SUCCEEDED(hr)) {
-#ifdef DEBUG
+#ifdef EMU_DEBUG
             hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Magenta), &mainBrush);
 #else
             hr = renderTarget->CreateSolidColorBrush(D2D1::ColorF(D2D1::ColorF::Black), &mainBrush);
-#endif // DEBUG
+#endif // EMU_DEBUG
 
             
         }

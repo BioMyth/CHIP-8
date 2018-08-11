@@ -8,21 +8,18 @@
 #include <winerror.h>
 #include <exception>
 #include "Emu.h"
-#include "OPCODES.h"
-//#include "Chip8-opcodes.h"
-
+#include "OpCodes.h"
 //	memory map
 //	0x000-0x1FF - Chip 8 interpreter (contains font set in emu)
 //	0x050-0x0A0 - Used for the built in 4x5 pixel font set (0-F)
 //	0x200-0xFFF - Program ROM and work RAM
 
-//in hz
-//#define CPU_CLOCK 540//600
-//#define DEBUG
 
-#ifdef DEBUG
+//#define EMU_DEBUG
+
+#ifdef EMU_DEBUG
     #include <iomanip>
-#endif // DEBUG
+#endif // EMU_DEBUG
 
 
 #define OPCODE_MAP
@@ -77,11 +74,13 @@ private:
 
     void InitializeChip8OpCodes(OpCodes<opcode_size, Chip8> &codes);
 
-#ifdef DEBUG
+#ifdef EMU_DEBUG
     std::ofstream output;
 #endif
 
-    /*::std::function<void(opcode_size)> OPCODES[16] ={
+#ifndef OPCODE_MAP
+
+    ::std::function<void(opcode_size)> OPCODES[16] ={
             //0x00--
             [this](opcode_size current) {
             switch (current & 0x00FF) {
@@ -311,6 +310,7 @@ private:
             }
             this->PC += 2;
         }
-    };*/
+    };
+#endif // OPCODE_MAP
 };
 #endif

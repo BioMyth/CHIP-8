@@ -77,10 +77,10 @@
     <ClInclude Include="RAM.h">
       <Filter>Emu\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="OPCODES.h">
+    <ClInclude Include="CPU.h">
       <Filter>Emu\Headers</Filter>
     </ClInclude>
-    <ClInclude Include="CPU.h">
+    <ClInclude Include="OpCodes.h">
       <Filter>Emu\Headers</Filter>
     </ClInclude>
   </ItemGroup>
