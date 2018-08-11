@@ -54,6 +54,9 @@
     <ClCompile Include="CPU.cpp">
       <Filter>Emu\Source</Filter>
     </ClCompile>
+    <ClCompile Include="CPU-OpCodes.cpp">
+      <Filter>Header Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Chip8.h">

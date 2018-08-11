@@ -11,8 +11,9 @@ public:
     ::std::function<void(opcode_size, EType&)>& operator[](int index) {
         return codes[static_cast<opcode_size>(index)];
     }
-    bool keyExists(opcode_size key) {
-        return codes.find(key) != codes.end();
+    ::std::function<void(opcode_size, EType&)>* keyExists(opcode_size key) {
+        auto iter = codes.find(key);
+        return (iter != codes.end() ? &(iter->second): nullptr);
     }
 protected:
     std::map< opcode_size, ::std::function<void(opcode_size, EType&)>> codes;

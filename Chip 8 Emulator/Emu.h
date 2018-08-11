@@ -14,7 +14,7 @@ public:
     ~Emu();
 
     virtual void loadProgram(char* name) = 0;
-    virtual void cycle(float delta) = 0;
+    virtual void fetchDecodeCycle(float delta) = 0;
 
     void start();
 
@@ -41,7 +41,6 @@ protected:
     GPU gpu;
     // Input system
     Input input;
-
     // Window
     HWND hwnd;
 };

@@ -57,11 +57,7 @@ Chip8::Chip8() :Emu(4096, 64, 32), PC(0x200), INDEX(0), current(0), SP(0), DELAY
 
     InitializeChip8OpCodes(codes);
 #ifdef EMU_DEBUG
-#ifdef OPCODE_MAP
-    output.open("map.rec");
-#else
-    output.open("old.rec");
-#endif
+    output.open("debug.rec");
 #endif // EMU_DEBUG
 
 };
@@ -98,7 +94,7 @@ void Chip8::loadProgram(char* name){
 	}
 }
 
-void Chip8::cycle(float delta){
+void Chip8::fetchDecodeCycle(float delta){
 
     accumulator += delta;
     timer += delta;
@@ -169,26 +165,18 @@ void Chip8::updateInput(){
 void Chip8::step(){
 
     if (this->SOUND) /*Play Sound*/;
-#ifdef OPCODE_MAP
+
     current = RAM[PC++]<<8 | RAM[PC++];
 
-    opcode_size key;
-    if ( codes.keyExists(key = current & 0xFFFF) );
-    else if (codes.keyExists(key = current & 0xF0FF) );
-    else if (codes.keyExists(key = current & 0xF00F) );
-    else if (codes.keyExists(key = current & 0xF000) );
+    ::std::function<void(opcode_size, Chip8&)> * func = nullptr;
+    if ( func = codes.keyExists(current & 0xFFFF) );
+    else if ( func = codes.keyExists(current & 0xF0FF) );
+    else if (func = codes.keyExists(current & 0xF00F) );
+    else if (func = codes.keyExists(current & 0xF000) );
     else
         throw std::runtime_error("Invalid instruction");
-    codes[key](current, *this);
-#else
-    
-    current = RAM[PC] << 8 | RAM[PC + 1];
-    if (((current >> 12) & 0xF) > 0xF)
-        throw std::runtime_error("Invalid instruction");
-	
-    else
-		(OPCODES[current>>12 & 0xF])(current);
-#endif  
+    (*func)(current, *this);
+
 #ifdef EMU_DEBUG
     output << "0x" << std::hex << static_cast<unsigned int>(current) << "\t" << std::hex << PC << "\t" << std::hex << STACK[SP] << std::endl;
 #endif

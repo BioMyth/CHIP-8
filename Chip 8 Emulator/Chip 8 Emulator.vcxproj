@@ -168,6 +168,7 @@
   <ItemGroup>
     <ClCompile Include="Chip8-opcodes.cpp" />
     <ClCompile Include="Chip8.cpp" />
+    <ClCompile Include="CPU-OpCodes.cpp" />
     <ClCompile Include="CPU.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>

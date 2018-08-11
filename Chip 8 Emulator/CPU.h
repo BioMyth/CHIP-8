@@ -1,7 +1,7 @@
 #pragma once
 
 #include "RAM.h"
-#include "OPCODES.h"
+#include <functional>
 
 template<typename pointerType,typename OPCodeType>
 class CPU{

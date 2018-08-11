@@ -47,7 +47,7 @@ void Emu::start() {
         emuControls();
         TimeStamp now = std::chrono::steady_clock::now().time_since_epoch();
         if (!paused)
-            cycle((now - lastTime).count());
+            fetchDecodeCycle((now - lastTime).count());
 
         lastTime = now;
         if (finished)

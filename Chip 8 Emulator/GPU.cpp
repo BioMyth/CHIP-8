@@ -102,6 +102,8 @@ void GPU::OnCreate(HWND hwnd, WPARAM wParam, LPARAM lParam) {
 }
 
 void GPU::setBuffer(uint32_t **&newBuffer) {
+    if (buffer != nullptr)
+        ClearBuffer();
     buffer = newBuffer;
 }
 
@@ -114,7 +116,13 @@ void GPU::InitializeBuffer() {
     
         buffer[y] = new uint32_t [resX];
         for (size_t x = 0; x < resX; x++)
+#ifdef EMU_DEBUG
             buffer[y][x] = D2D1::ColorF::Magenta;
+#else
+            buffer[y][x] = D2D1::ColorF::Black;
+#endif // EMU_DEBUG
+
+
     }
 }
 
