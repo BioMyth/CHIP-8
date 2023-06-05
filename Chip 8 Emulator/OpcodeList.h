@@ -10,14 +10,14 @@ void case0(Chip8 cpu){
 			break;
 	case(0x00):
 		for(int i=0; i < 64*32; i++)
-			cpu.SCREEN[i]=0;
+			cpu.SCREEN[i] = 0;
 		cpu.update=true;
 		cpu.PC+=2;
 		break;
 	default:
 		std::cout<<"Could not find opcode(0x00): "<<std::hex<<std::uppercase<< cpu.current <<std::nouppercase<<std::dec<<std::endl;
 		cpu.PC+=2;
-		break;	
+		break;
 	}
 }
 void case1(Chip8 cpu){
@@ -137,7 +137,7 @@ void caseE(Chip8 cpu){
 		cpu.PC+=2;
 }
 
-		
+
 void caseF(Chip8 cpu){
 		switch(cpu.current & 0xFF){
 		case(0x07):
@@ -178,7 +178,7 @@ void caseF(Chip8 cpu){
 		case(0x65):
 			for(int i=0x0; i <= (cpu.current>>8 & 0xF); i++)
 				cpu.REG[i]=cpu.RAM[cpu.INDEX+i];
-			break;	
+			break;
 		}
 		cpu.PC+=2;
 }

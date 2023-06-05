@@ -23,14 +23,10 @@ private:
 
 template<typename T>
 void SortedList<T>::insert(T newData){
-	node** cursor=&this->root;
-	while((*cursor)!=nullptr && (*cursor)->data<newData)
+	node** cursor = &this->root;
+	while((*cursor) != nullptr && (*cursor)->data < newData)
 		cursor=&(*cursor)->next;
-
-	//node* tmp=(*cursor);
-	(*cursor)=new node(newData,(*cursor));//tmp);
-	//(*cursor)->data=newData;
-	//(*cursor)->next=tmp;
+	(*cursor)=new node(newData,(*cursor));
 }
 
 template<typename T>

@@ -5,8 +5,9 @@
 #include <fstream>
 #include <thread>
 #include <chrono>
-#include <Windows.h>
+#include "COORD.h"
 #include <string>
+#include <functional>
 
 //	memory map
 //	0x000-0x1FF - Chip 8 interpreter (contains font set in emu)
@@ -26,35 +27,14 @@ public:
 	~Chip8();
 	void loadProgram(char* name);
 	void cycle();
-	//Pane** generatePane();
 	void start(bool *finished);
 	void loopCycle();
-	//void loopInput();
 	void join();
 	void display();
-	//byte charToCode(char tmp);
 	void loopInput();
-//private:
-/*	void case0();
-	void case1();
-	void case2();
-	void case3();
-	void case4();
-	void case5();
-	void case6();
-	void case7();
-	void case8();
-	void case9();
-	void caseA();
-	void caseB();
-	void caseC();
-	void caseD();
-	void caseE();
-	void caseF();*/
 
 	bool update;
 	bool *finished;
-	//void (Chip8::*opcodes[16])();
 	std::thread *cpuEmu;
 	std::thread *render;
 	std::thread *input;
@@ -67,7 +47,7 @@ public:
 	mem_pointer PC;
 	mem_pointer INDEX;
 	mem_pointer STACK[16];
-	
+
 	byte RAM[4096];
 	byte REG[16];
 	bool SCREEN[32][65];
@@ -75,17 +55,16 @@ public:
 	bool KEY[16];
 	byte DELAY;
 	byte SOUND;
-
+#ifdef _WIN32
 	HWND console;
 	RECT r;
 	HANDLE hOut;
     CONSOLE_SCREEN_BUFFER_INFO SBInfo;
     COORD NewSBSize;
 	CONSOLE_CURSOR_INFO CursorInfo;
+#endif
 
-	//void ((*OPCODES[])()) = {
-    //void (*OPCODES[])() = {
-    ::std::function<void()> OPCODES[16] ={
+    std::function<void()> OPCODES[16] = {
             [this]() {
             switch (this->current & 0x000F) {
             case(0x0E):			//Clears the screen.
@@ -213,7 +192,7 @@ public:
         },
 
             // Draws a sprite at coordinate (VX, VY) that has a width of 8 pixels and a height of N pixels.
-            // Each row of 8 pixels is read as bit-coded starting from memory location INDEX; INDEX value doesn’t change after this Instruction. 
+            // Each row of 8 pixels is read as bit-coded starting from memory location INDEX; INDEX value doesn’t change after this Instruction.
             // REG[F] is set to 1 if any screen pixels are flipped from set to unset when the sprite is drawn, and to 0 if that doesn’t happen
             [this]() {
             byte baseX = this->REG[(this->current >> 8) & 0x0F];
@@ -247,7 +226,7 @@ public:
             this->PC += 2;
         },
 
-            // 
+            //
             [this]() {
             switch (this->current & 0xFF) {
             case(0x07):

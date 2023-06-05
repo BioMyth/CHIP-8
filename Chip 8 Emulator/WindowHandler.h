@@ -1,3 +1,5 @@
+#pragma once
+#ifdef _WIN32
 #ifndef _WINDOW_HANDLER_H_
 #define _WINDOW_HANDLER_H_
 #include <Windows.h>
@@ -17,7 +19,7 @@ private:
 void Window::Register(){
     // Register the window class.
     const wchar_t CLASS_NAME[]  = L"Sample Window Class";
-    
+
     WNDCLASS wc = { };
 
     wc.lpfnWndProc   = WindowProc;
@@ -37,7 +39,7 @@ void Window::Register(){
         // Size and position
         CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 
-        NULL,       // Parent window    
+        NULL,       // Parent window
         NULL,       // Menu
         hInstance,  // Instance handle
         NULL        // Additional application data
@@ -50,4 +52,5 @@ void Window::Register(){
 
     ShowWindow(hwnd, nCmdShow);
 }
+#endif
 #endif

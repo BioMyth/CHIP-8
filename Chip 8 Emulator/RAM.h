@@ -7,7 +7,7 @@ template<unsigned int T>
 class RAM{
 public:
 	RAM(){
-		memset(memory,0,sizeof(byte) * size);
+		memset(memory, 0, sizeof(byte) * size);
 	}
 	void setByte(unsigned int index,byte newValue);
 	byte getByte(unsigned int index);
